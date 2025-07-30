@@ -1,0 +1,148 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Business Data Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        .login-container, .dashboard-container {
+            display: none;
+            padding: 20px;
+        }
+        .login-container.active, .dashboard-container.active {
+            display: block;
+        }
+        .login-box {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .login-box h2 {
+            margin-bottom: 20px;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .login-box button {
+            width: 100%;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .main-layout {
+            display: flex;
+            height: 100vh;
+        }
+        .left-pane {
+            width: 25%;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .right-pane {
+            width: 75%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .chat-output {
+            flex: 1;
+            background: white;
+            padding: 10px;
+            border: 1px solid #ccc;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .chat-input-area {
+            display: flex;
+        }
+        .chat-input-area textarea {
+            flex: 1;
+            padding: 10px;
+            resize: none;
+        }
+        .chat-input-area button {
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .role-info {
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container active" id="loginPage">
+    <div class="login-box">
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <p><a href="#">Register as new user</a> | <a href="#">Reset password</a></p>
+    </div>
+</div>
+
+<div class="dashboard-container" id="dashboardPage">
+    <div class="main-layout">
+        <div class="left-pane">
+            <div class="role-info" id="roleInfo"></div>
+            <h3>Database Connection</h3>
+            <p>Status: Connected to SQLite3</p>
+            <h3>Schema Visualization</h3>
+            <ul>
+                <li>Table: Customers</li>
+                <li>Table: Orders</li>
+                <li>Table: Products</li>
+            </ul>
+        </div>
+        <div class="right-pane">
+            <div class="chat-output" id="chatOutput">
+                <p><strong>Bot:</strong> Welcome! Ask me anything about your data.</p>
+            </div>
+            <div class="chat-input-area">
+                <textarea id="chatInput" rows="3" placeholder="Type your query here..."></textarea>
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function login() {
+        const username = document.getElementById("username").value;
+        const role = username.toLowerCase().includes("admin") ? "Admin" : "Analyst";
+        document.getElementById("roleInfo").innerText = "Logged in as: " + role;
+        document.getElementById("loginPage").classList.remove("active");
+        document.getElementById("dashboardPage").classList.add("active");
+    }
+
+    function sendMessage() {
+        const input = document.getElementById("chatInput").value;
+        if (input.trim() === "") return;
+        const chatOutput = document.getElementById("chatOutput");
+        chatOutput.innerHTML += `<p><strong>You:</strong> ${input}</p>`;
+        chatOutput.innerHTML += `<p><strong>Bot:</strong> <em>Generating SQL SELECT statement...</em></p>`;
+        document.getElementById("chatInput").value = "";
+        chatOutput.scrollTop = chatOutput.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
