@@ -5,7 +5,7 @@
 
 ## 📌 Phase 1: Core Setup & Authentication (Easy)
 
-### - [ ] **Set Up Python Virtual Environment**
+### - [x] **Set Up Python Virtual Environment**
 **Details**:
 - Create a virtual environment using `python -m venv venv`.
 - Activate it and install Django and other initial dependencies.
@@ -18,7 +18,7 @@
 
 ---
 
-### - [ ] **Initialize Django Project**
+### - [x] **Initialize Django Project**
 **Details**:
 - Start a new Django project and app.
 - Configure SQLite3 as the default database.
@@ -30,7 +30,7 @@
 
 ---
 
-### - [ ] **Create User Models with Roles (Analyst, Admin)**
+### - [x] **Create User Models with Roles (Analyst, Admin)**
 **Details**:
 - Extend `AbstractUser` to include a `role` field.
 - Define role choices and enforce permissions in views.
@@ -41,7 +41,7 @@
 
 ---
 
-### - [ ] **Implement Login, Registration, and Password Reset**
+### - [x] **Implement Login, Registration, and Password Reset**
 **Details**:
 - Use Django’s built-in auth views and forms.
 - Customize templates for login, registration, and password reset.
@@ -53,7 +53,7 @@
 
 ---
 
-### - [ ] **Add User Profile Dropdown (Edit Profile, Change Password, Logout)**
+### - [x] **Add User Profile Dropdown (Edit Profile, Change Password, Logout)**
 **Details**:
 - Add dropdown menu in the top-right corner of the dashboard.
 - Link to views for profile editing, password change, and logout.
@@ -66,10 +66,10 @@
 
 ## 📌 Phase 2: Database Connectivity (Moderate)
 
-### - [ ] **Enable User-Specific Database Connections**
+### - [x] **Enable User-Specific Database Connections**
 **Details**:
 - Create a model to store encrypted DB credentials.
-- Support PostgreSQL and MySQL.
+- Support SQLite3 only (per user).
 - Validate and store only one active connection per user.
 
 **Acceptance Criteria**:
@@ -79,7 +79,7 @@
 
 ---
 
-### - [ ] **Validate Connection Immediately**
+### - [x] **Validate Connection Immediately**
 **Details**:
 - On submission, test DB connection using credentials.
 - Show success or error message.
@@ -90,7 +90,7 @@
 
 ---
 
-### - [ ] **Disable Chat Interface Until Valid Connection**
+### - [x] **Disable Chat Interface Until Valid Connection**
 **Details**:
 - Use a flag to check connection status.
 - Disable chat input and show a prompt if no valid connection.
