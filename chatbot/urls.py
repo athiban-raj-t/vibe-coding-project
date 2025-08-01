@@ -10,4 +10,5 @@ urlpatterns = [
     path('db-connection/', views.db_connection_view, name='db_connection'),
     path('remove-db-connection/', views.remove_db_connection, name='remove_db_connection'),
     path('chat/', views.chat_view, name='chat'),
+    path('schema-test/', views.schema_test_view, name='schema_test'),
 ] 

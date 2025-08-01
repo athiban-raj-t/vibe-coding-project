@@ -1,5 +1,11 @@
 from django import forms
-from .models import DatabaseConnection
+from django.contrib.auth.forms import UserCreationForm
+from .models import User, DatabaseConnection
+
+class CustomUserCreationForm(UserCreationForm):
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = UserCreationForm.Meta.fields + ('role',)
 
 class DatabaseConnectionForm(forms.ModelForm):
     class Meta:

@@ -2,24 +2,27 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .forms import DatabaseConnectionForm
+from .forms import CustomUserCreationForm, DatabaseConnectionForm
 from .models import DatabaseConnection
 import os
 import sqlite3
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from .agents import SchemaReaderAgent
+from django.utils.html import format_html, escape
 
 # Create your views here.
 
 def register(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             messages.success(request, 'Registration successful. You can now log in.')
             return redirect('login')
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
 
 @login_required
@@ -94,9 +97,24 @@ def chat_view(request):
         user_message = request.POST.get('message', '').strip()
         if user_message:
             chat_history.append({'sender': 'user', 'text': user_message})
-            # Echo bot
-            bot_response = f"Echo: {user_message}"
-            chat_history.append({'sender': 'bot', 'text': bot_response})
+            if user_message.lower() == '/schema':
+                agent = SchemaReaderAgent()
+                schema = agent.read_schema(db_conn)
+                if 'error' in schema:
+                    bot_response = f"Schema error: {escape(schema['error'])}"
+                else:
+                    # Format schema as HTML for chat
+                    html = '<b>Database Schema:</b><br>'
+                    for table in schema['tables']:
+                        html += f"<b>{escape(table['name'])}</b>: "
+                        html += ', '.join(f"{escape(col['name'])} ({escape(col['type'])})" for col in table['columns'])
+                        html += '<br>'
+                    bot_response = mark_safe(html)
+                chat_history.append({'sender': 'bot', 'text': bot_response})
+            else:
+                # Echo bot
+                bot_response = f"Echo: {user_message}"
+                chat_history.append({'sender': 'bot', 'text': bot_response})
             request.session['chat_history'] = chat_history
         return redirect('chat')
 
@@ -105,3 +123,13 @@ def chat_view(request):
         'has_valid_connection': has_valid_connection,
         'chat_history': chat_history,
     })
+
+@login_required
+def schema_test_view(request):
+    try:
+        db_conn = request.user.db_connection
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    agent = SchemaReaderAgent()
+    schema = agent.read_schema(db_conn)
+    return JsonResponse(schema)

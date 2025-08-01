@@ -101,7 +101,7 @@
 
 ---
 
-### - [ ] **Allow Changing or Removing Connection**
+### - [x] **Allow Changing or Removing Connection**
 **Details**:
 - Provide UI to update or delete DB connection.
 - Revalidate and update status accordingly.
