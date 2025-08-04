@@ -2,6 +2,9 @@ from langchain.schema import BaseChatMessageHistory
 from langchain.agents import AgentExecutor
 from langgraph.graph import StateGraph
 import sqlite3
+import openai
+from django.conf import settings
+from openai import AzureOpenAI
 
 # Placeholder for user session state
 class ChatbotState:
@@ -41,8 +44,34 @@ class SchemaReaderAgent:
 # Placeholder: SQL Generator Agent
 class SQLGeneratorAgent:
     def generate_sql(self, user_query, schema):
-        # TODO: Implement prompt-based SQL generation
-        return "SELECT 1;"
+        schema_str = ''
+        for table in schema.get('tables', []):
+            schema_str += f"Table: {table['name']}\nColumns: "
+            schema_str += ', '.join(f"{col['name']} ({col['type']})" for col in table['columns']) + '\n'
+        prompt = f"""
+You are an expert SQL assistant. Only generate safe, syntactically correct SELECT statements for SQLite3.\nSchema:\n{schema_str}\nUser question: {user_query}\nSQL (SELECT only):
+"""
+        try:
+            client = AzureOpenAI(
+                api_key=settings.AZURE_OPENAI_API_KEY,
+                api_version="2025-01-01-preview",
+                azure_endpoint=settings.AZURE_OPENAI_ENDPOINT
+            )
+            response = client.chat.completions.create(
+                model='gpt-4.1',
+                messages=[
+                    {"role": "system", "content": "You are an expert SQL assistant. Only generate safe, syntactically correct SELECT statements for SQLite3."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=128,
+                temperature=0.0,
+            )
+            sql = response.choices[0].message.content.strip()
+            if not sql.lower().startswith('select'):
+                return "-- ERROR: Only SELECT statements are allowed."
+            return sql
+        except Exception as e:
+            return f"-- ERROR: {e}"
 
 # Placeholder: Answering Agent
 class AnsweringAgent:

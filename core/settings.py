@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import base64
 from cryptography.fernet import Fernet
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -137,3 +138,8 @@ DEFAULT_FROM_EMAIL = 'athibanraj.thi@gmail.com' # The email address that will ap
 # Fernet key for field encryption (generate once and keep secret!)
 FIELD_ENCRYPTION_KEY = Fernet.generate_key().decode()
 # In production, set FIELD_ENCRYPTION_KEY from an environment variable or secret manager.
+
+# Azure OpenAI LLM integration settings
+AZURE_OPENAI_API_KEY = os.environ.get('AZURE_OPENAI_API_KEY', 'your-azure-openai-api-key')
+AZURE_OPENAI_ENDPOINT = os.environ.get('AZURE_OPENAI_ENDPOINT', 'https://your-resource.openai.azure.com/')
+AZURE_OPENAI_DEPLOYMENT = os.environ.get('AZURE_OPENAI_DEPLOYMENT', 'your-deployment-name')

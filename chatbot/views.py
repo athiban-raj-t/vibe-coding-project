@@ -9,7 +9,7 @@ import sqlite3
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
-from .agents import SchemaReaderAgent
+from .agents import SchemaReaderAgent, SQLGeneratorAgent
 from django.utils.html import format_html, escape
 
 # Create your views here.
@@ -133,3 +133,18 @@ def schema_test_view(request):
     agent = SchemaReaderAgent()
     schema = agent.read_schema(db_conn)
     return JsonResponse(schema)
+
+@login_required
+def sqlgen_test_view(request):
+    try:
+        db_conn = request.user.db_connection
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    question = request.GET.get('question', '')
+    if not question:
+        return JsonResponse({'error': 'Missing question parameter.'}, status=400)
+    schema_agent = SchemaReaderAgent()
+    schema = schema_agent.read_schema(db_conn)
+    sql_agent = SQLGeneratorAgent()
+    sql = sql_agent.generate_sql(question, schema)
+    return JsonResponse({'sql': sql})
