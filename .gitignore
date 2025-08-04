@@ -1,3 +1,8 @@
+env2/
 venv/ 
 *.db
-db.sqlite3
+./db.sqlite3
+*.pyc
+chatbot/__pycache__/
+chatbot/migrations/__pycache__/
+core/__pycache__/
