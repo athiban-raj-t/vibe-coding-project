@@ -103,7 +103,6 @@ def chat_view(request):
                 if 'error' in schema:
                     bot_response = f"Schema error: {escape(schema['error'])}"
                 else:
-                    # Format schema as HTML for chat
                     html = '<b>Database Schema:</b><br>'
                     for table in schema['tables']:
                         html += f"<b>{escape(table['name'])}</b>: "
@@ -111,6 +110,14 @@ def chat_view(request):
                         html += '<br>'
                     bot_response = mark_safe(html)
                 chat_history.append({'sender': 'bot', 'text': bot_response})
+            elif user_message.lower().startswith('/sql '):
+                question = user_message[5:].strip()
+                schema_agent = SchemaReaderAgent()
+                schema = schema_agent.read_schema(db_conn)
+                sql_agent = SQLGeneratorAgent()
+                sql = sql_agent.generate_sql(question, schema)
+                bot_response = f"<b>Generated SQL:</b><br><pre>{escape(sql)}</pre>"
+                chat_history.append({'sender': 'bot', 'text': mark_safe(bot_response)})
             else:
                 # Echo bot
                 bot_response = f"Echo: {user_message}"

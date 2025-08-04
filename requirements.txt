@@ -4,5 +4,6 @@ sqlparse==0.5.3
 tzdata==2025.2
 langchain
 langgraph
-openai
+langchain-openai
 cryptography
+python-dotenv

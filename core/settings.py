@@ -13,7 +13,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import base64
 from cryptography.fernet import Fernet
+from dotenv import load_dotenv
 import os
+
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,7 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'chatbot',
+    'chatbot'
 ]
 
 MIDDLEWARE = [
@@ -140,6 +144,6 @@ FIELD_ENCRYPTION_KEY = Fernet.generate_key().decode()
 # In production, set FIELD_ENCRYPTION_KEY from an environment variable or secret manager.
 
 # Azure OpenAI LLM integration settings
-AZURE_OPENAI_API_KEY = os.environ.get('AZURE_OPENAI_API_KEY', 'your-azure-openai-api-key')
-AZURE_OPENAI_ENDPOINT = os.environ.get('AZURE_OPENAI_ENDPOINT', 'https://your-resource.openai.azure.com/')
-AZURE_OPENAI_DEPLOYMENT = os.environ.get('AZURE_OPENAI_DEPLOYMENT', 'your-deployment-name')
+AZURE_OPENAI_API_KEY = os.getenv('AZURE_OPENAI_API_KEY')
+AZURE_OPENAI_ENDPOINT =  "https://cts-vibeopenai01.openai.azure.com/"
+AZURE_OPENAI_DEPLOYMENT = os.getenv('AZURE_OPENAI_DEPLOYMENT')

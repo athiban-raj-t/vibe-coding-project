@@ -5,6 +5,7 @@ import sqlite3
 import openai
 from django.conf import settings
 from openai import AzureOpenAI
+from langchain_openai import AzureChatOpenAI
 
 # Placeholder for user session state
 class ChatbotState:
@@ -52,21 +53,19 @@ class SQLGeneratorAgent:
 You are an expert SQL assistant. Only generate safe, syntactically correct SELECT statements for SQLite3.\nSchema:\n{schema_str}\nUser question: {user_query}\nSQL (SELECT only):
 """
         try:
-            client = AzureOpenAI(
-                api_key=settings.AZURE_OPENAI_API_KEY,
+            llm = AzureChatOpenAI(
+                azure_deployment=settings.AZURE_OPENAI_DEPLOYMENT,
                 api_version="2025-01-01-preview",
-                azure_endpoint=settings.AZURE_OPENAI_ENDPOINT
+                azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+                api_key=settings.AZURE_OPENAI_API_KEY,
+                temperature=0,
             )
-            response = client.chat.completions.create(
-                model='gpt-4.1',
-                messages=[
-                    {"role": "system", "content": "You are an expert SQL assistant. Only generate safe, syntactically correct SELECT statements for SQLite3."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=128,
-                temperature=0.0,
-            )
-            sql = response.choices[0].message.content.strip()
+            messages = [
+                ("system", "You are an expert SQL assistant. Only generate safe, syntactically correct SELECT statements for SQLite3."),
+                ("human", prompt)
+            ]
+            ai_msg = llm.invoke(messages)
+            sql = ai_msg.content.strip()
             if not sql.lower().startswith('select'):
                 return "-- ERROR: Only SELECT statements are allowed."
             return sql
