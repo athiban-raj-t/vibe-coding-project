@@ -1,4 +1,4 @@
-# ✅ Detailed TODO List for Business Data Chatbot Web Application  
+# ✅ Detailed TODO List for DataChat Companion Web Application  
 **Environment Requirement**: All tasks must be implemented and executed within a **Python virtual environment** using `venv` or `virtualenv`.
 
 ---
@@ -114,7 +114,7 @@
 
 ## 📌 Phase 3: Chatbot Intelligence (Moderate to Hard)
 
-### - [ ] **Install and Configure LangChain + LangGraph**
+### - [x] **Install and Configure LangChain + LangGraph**
 **Details**:
 - Install LangChain and LangGraph inside the virtual environment.
 - Set up basic agent orchestration.
@@ -125,7 +125,7 @@
 
 ---
 
-### - [ ] **Implement Schema Reader Agent**
+### - [x] **Implement Schema Reader Agent**
 **Details**:
 - Agent connects to user’s DB and reads schema.
 - Returns structured schema data.
@@ -136,7 +136,7 @@
 
 ---
 
-### - [ ] **Implement SQL Generator Agent**
+### - [x] **Implement SQL Generator Agent**
 **Details**:
 - Use prompt templates to generate safe `SELECT` statements.
 - Validate SQL syntax and restrict to read-only queries.
@@ -147,7 +147,7 @@
 
 ---
 
-### - [ ] **Implement Answering Agent**
+### - [x] **Implement Answering Agent**
 **Details**:
 - Executes SQL queries and formats results in Markdown.
 - Handles large result sets gracefully.

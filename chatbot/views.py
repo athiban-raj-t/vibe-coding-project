@@ -3,13 +3,13 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .forms import CustomUserCreationForm, DatabaseConnectionForm
-from .models import DatabaseConnection
+from .models import DatabaseConnection, ChatHistory
 import os
 import sqlite3
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
-from .agents import SchemaReaderAgent, SQLGeneratorAgent
+from .agents import SchemaReaderAgent, SQLGeneratorAgent, AnsweringAgent
 from django.utils.html import format_html, escape
 
 # Create your views here.
@@ -28,6 +28,15 @@ def register(request):
 @login_required
 def dashboard(request):
     return render(request, 'dashboard.html')
+
+@login_required
+def profile_view(request):
+    if request.method == 'POST':
+        # Handle profile updates here if needed
+        messages.success(request, 'Profile updated successfully!')
+        return redirect('profile')
+    
+    return render(request, 'profile.html', {'user': request.user})
 
 @login_required
 def db_connection_view(request):
@@ -87,16 +96,25 @@ def chat_view(request):
         db_conn = None
         has_valid_connection = False
 
-    # Simple in-memory chat history for demo (replace with DB later)
-    if 'chat_history' not in request.session:
-        request.session['chat_history'] = []
-
-    chat_history = request.session['chat_history']
+    # Get chat history from database instead of session
+    chat_histories = ChatHistory.objects.filter(user=request.user).order_by('timestamp')[:50]  # Last 50 messages
+    chat_history = []
+    for hist in chat_histories:
+        chat_history.append({
+            'sender': 'user', 
+            'text': hist.user_query,
+            'timestamp': hist.timestamp
+        })
+        chat_history.append({
+            'sender': 'bot', 
+            'text': hist.bot_response,
+            'timestamp': hist.timestamp
+        })
 
     if request.method == 'POST' and has_valid_connection:
         user_message = request.POST.get('message', '').strip()
         if user_message:
-            chat_history.append({'sender': 'user', 'text': user_message})
+            generated_sql = None
             if user_message.lower() == '/schema':
                 agent = SchemaReaderAgent()
                 schema = agent.read_schema(db_conn)
@@ -109,26 +127,60 @@ def chat_view(request):
                         html += ', '.join(f"{escape(col['name'])} ({escape(col['type'])})" for col in table['columns'])
                         html += '<br>'
                     bot_response = mark_safe(html)
-                chat_history.append({'sender': 'bot', 'text': bot_response})
             elif user_message.lower().startswith('/sql '):
                 question = user_message[5:].strip()
                 schema_agent = SchemaReaderAgent()
                 schema = schema_agent.read_schema(db_conn)
                 sql_agent = SQLGeneratorAgent()
-                sql = sql_agent.generate_sql(question, schema)
-                bot_response = f"<b>Generated SQL:</b><br><pre>{escape(sql)}</pre>"
-                chat_history.append({'sender': 'bot', 'text': mark_safe(bot_response)})
+                generated_sql = sql_agent.generate_sql(question, schema)
+                bot_response = f"<b>Generated SQL:</b><br><pre>{escape(generated_sql)}</pre>"
+            elif user_message.lower().startswith('/run '):
+                question = user_message[5:].strip()
+                schema_agent = SchemaReaderAgent()
+                schema = schema_agent.read_schema(db_conn)
+                sql_agent = SQLGeneratorAgent()
+                generated_sql = sql_agent.generate_sql(question, schema)
+                answer_agent = AnsweringAgent()
+                result = answer_agent.execute_sql(db_conn, generated_sql)
+                bot_response = f"<b>Generated SQL:</b><br><pre>{escape(generated_sql)}</pre><br><b>Result:</b><br>{result}"
             else:
                 # Echo bot
                 bot_response = f"Echo: {user_message}"
-                chat_history.append({'sender': 'bot', 'text': bot_response})
-            request.session['chat_history'] = chat_history
+            
+            # Ensure bot_response is not empty
+            if not bot_response or not str(bot_response).strip():
+                bot_response = "(No response from AI)"
+            print(f"[DEBUG] Bot response: {bot_response}")  # Debug log
+            
+            # Save to database
+            ChatHistory.objects.create(
+                user=request.user,
+                user_query=user_message,
+                generated_sql=generated_sql,
+                bot_response=bot_response,
+                db_connection=db_conn
+            )
+            
         return redirect('chat')
 
     return render(request, 'chat.html', {
         'db_conn': db_conn,
         'has_valid_connection': has_valid_connection,
         'chat_history': chat_history,
+    })
+
+@login_required
+def chat_history_view(request):
+    if request.user.role == 'admin':
+        # Admin can see all chat histories
+        histories = ChatHistory.objects.all().order_by('-timestamp')
+    else:
+        # Regular users can only see their own
+        histories = ChatHistory.objects.filter(user=request.user).order_by('-timestamp')
+    
+    return render(request, 'chat_history.html', {
+        'histories': histories,
+        'is_admin': request.user.role == 'admin'
     })
 
 @login_required
@@ -155,3 +207,20 @@ def sqlgen_test_view(request):
     sql_agent = SQLGeneratorAgent()
     sql = sql_agent.generate_sql(question, schema)
     return JsonResponse({'sql': sql})
+
+@login_required
+def schema_visualization_view(request):
+    try:
+        db_conn = request.user.db_connection
+        if not db_conn or not db_conn.is_active:
+            return JsonResponse({'error': 'No active database connection'}, status=400)
+        
+        schema_agent = SchemaReaderAgent()
+        schema = schema_agent.read_schema(db_conn)
+        
+        if 'error' in schema:
+            return JsonResponse({'error': schema['error']}, status=400)
+        
+        return JsonResponse(schema)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)

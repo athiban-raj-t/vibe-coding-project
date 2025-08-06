@@ -66,6 +66,11 @@ You are an expert SQL assistant. Only generate safe, syntactically correct SELEC
             ]
             ai_msg = llm.invoke(messages)
             sql = ai_msg.content.strip()
+            
+            # Clean up the response: remove markdown code blocks
+            sql = sql.replace('```sql', '').replace('```', '').strip()
+            
+            # Validate: must start with SELECT
             if not sql.lower().startswith('select'):
                 return "-- ERROR: Only SELECT statements are allowed."
             return sql
@@ -74,9 +79,28 @@ You are an expert SQL assistant. Only generate safe, syntactically correct SELEC
 
 # Placeholder: Answering Agent
 class AnsweringAgent:
-    def execute_sql(self, db_connection, sql):
-        # TODO: Implement SQL execution and result formatting
-        return "Result: 1"
+    def execute_sql(self, db_connection, sql, row_limit=50):
+        import sqlite3
+        import pandas as pd
+        file_path = db_connection.file_path
+        # if not sql.strip().lower().startswith('select'):
+        #     return "**ERROR:** Only SELECT statements are allowed."
+        try:
+            conn = sqlite3.connect(file_path)
+            df = pd.read_sql_query(sql, conn)
+            conn.close()
+            if df.empty:
+                return "No results found."
+            if len(df) > row_limit:
+                df = df.head(row_limit)
+                note = f"\n\n*Showing first {row_limit} rows.*"
+            else:
+                note = ""
+            # Convert to Markdown table
+            md = df.to_markdown(index=False)
+            return f"```markdown\n{md}\n```{note}"
+        except Exception as e:
+            return f"**ERROR:** {e}"
 
 # Orchestration graph (scaffold)
 def get_agent_executor(user, db_connection):

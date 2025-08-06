@@ -108,6 +108,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTH_USER_MODEL = 'chatbot.User'
 
+# Authentication settings
+LOGIN_REDIRECT_URL = '/profile/'
+LOGIN_URL = '/accounts/login/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

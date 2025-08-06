@@ -1,45 +1,5 @@
 {% extends 'registration/base.html' %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<div style="display: flex; justify-content: flex-end; align-items: center;">
-    <div class="dropdown" style="position: relative;">
-        <button onclick="document.getElementById('profileDropdown').classList.toggle('show')" style="padding: 8px 16px;">{{ request.user.username }} &#x25BC;</button>
-        <div id="profileDropdown" class="dropdown-content" style="display: none; position: absolute; right: 0; background: #fff; border: 1px solid #ccc; min-width: 160px; z-index: 1;">
-            <a href="#">Edit Profile</a>
-            <a href="{% url 'password_change' %}">Change Password</a>
-            <a href="{% url 'logout' %}">Logout</a>
-        </div>
-    </div>
-</div>
-<script>
-    window.onclick = function(event) {
-        if (!event.target.matches('button')) {
-            var dropdowns = document.getElementsByClassName("dropdown-content");
-            for (var i = 0; i < dropdowns.length; i++) {
-                var openDropdown = dropdowns[i];
-                if (openDropdown.classList.contains('show')) {
-                    openDropdown.classList.remove('show');
-                    openDropdown.style.display = 'none';
-                }
-            }
-        } else {
-            var dropdown = document.getElementById('profileDropdown');
-            if (dropdown.classList.contains('show')) {
-                dropdown.style.display = 'block';
-            } else {
-                dropdown.style.display = 'none';
-            }
-        }
-    }
-    document.querySelector('.dropdown button').addEventListener('click', function(e) {
-        var dropdown = document.getElementById('profileDropdown');
-        if (dropdown.style.display === 'block') {
-            dropdown.style.display = 'none';
-        } else {
-            dropdown.style.display = 'block';
-        }
-        e.stopPropagation();
-    });
-</script>
 <h2>Welcome to your dashboard, {{ request.user.get_username }}!</h2>
 {% endblock %} 

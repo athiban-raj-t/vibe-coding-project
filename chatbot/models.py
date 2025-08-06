@@ -68,3 +68,17 @@ class DatabaseConnection(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.label} ({'Active' if self.is_active else 'Inactive'})"
+
+class ChatHistory(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='chat_histories')
+    timestamp = models.DateTimeField(auto_now_add=True)
+    user_query = models.TextField()
+    generated_sql = models.TextField(blank=True, null=True)
+    bot_response = models.TextField()
+    db_connection = models.ForeignKey(DatabaseConnection, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.timestamp.strftime('%Y-%m-%d %H:%M')}"

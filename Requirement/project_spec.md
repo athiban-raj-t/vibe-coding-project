@@ -1,6 +1,6 @@
 
 # 📘 Software Specification Document  
-**Project Title**: Business Data Chatbot Web Application  
+**Project Title**: DataChat Companion Web Application  
 **Owner**: T. Athibanraj (Cognizant)  
 **Tech Stack**: Django, LangGraph, LangChain, SQLite3  
 **Deployment**: Internal (Intranet or On-Premise)

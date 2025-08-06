@@ -2,13 +2,20 @@
 {% block title %}Chat{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
     body { background: #f4f6fa; }
     .copilot-container { display: flex; height: 80vh; margin-top: 30px; box-shadow: 0 0 10px #e0e0e0; border-radius: 12px; overflow: hidden; }
-    .sidebar { width: 320px; background: #fff; border-right: 1px solid #e0e0e0; padding: 2rem 1.5rem; display: flex; flex-direction: column; justify-content: space-between; }
+    .sidebar { width: 320px; background: #fff; border-right: 1px solid #e0e0e0; padding: 2rem 1.5rem; display: flex; flex-direction: column; }
     .sidebar .conn-label { font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; }
     .sidebar .conn-detail { color: #555; font-size: 0.95rem; margin-bottom: 1.5rem; }
-    .sidebar .edit-btn { width: 100%; }
+    .sidebar .btn-group { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .sidebar .btn-group .btn { flex: 1; font-size: 0.9rem; padding: 0.5rem; }
+    .sidebar .schema-section { height: 300px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 6px; padding: 1rem; background: #fafafa; }
+    .sidebar .schema-section::-webkit-scrollbar { width: 8px; }
+    .sidebar .schema-section::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+    .sidebar .schema-section::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+    .sidebar .schema-section::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
     .chat-pane { flex: 1; display: flex; flex-direction: column; background: #f4f6fa; }
     .chat-history { flex: 1; overflow-y: auto; padding: 2rem; display: flex; flex-direction: column; gap: 1.2rem; }
     .msg-row { display: flex; align-items: flex-end; }
@@ -38,22 +45,34 @@
             {% else %}
                 <div class="alert alert-warning">No connection set.</div>
             {% endif %}
-            <a href="{% url 'db_connection' %}" class="btn btn-outline-primary edit-btn mb-2">Edit</a>
-            <form method="post" action="{% url 'remove_db_connection' %}" onsubmit="return confirm('Are you sure you want to remove this connection?');">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger edit-btn">Remove Connection</button>
-            </form>
+            <div class="btn-group">
+                <a href="{% url 'db_connection' %}" class="btn btn-outline-primary">Edit</a>
+                <form method="post" action="{% url 'remove_db_connection' %}" onsubmit="return confirm('Are you sure you want to remove this connection?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Remove Connection</button>
+                </form>
+            </div>
+            
+            <!-- Schema Tree View -->
+            {% if db_conn %}
+                <div class="schema-section">
+                    <div class="conn-label">Database Schema</div>
+                    <div id="schema-tree">
+                        <div class="text-muted">Loading schema...</div>
+                    </div>
+                </div>
+            {% endif %}
         </div>
-        <div style="font-size: 0.95rem; color: #888;">Chatbot UI inspired by Microsoft Copilot</div>
+        <!-- <div style="font-size: 0.95rem; color: #888;">Chatbot UI inspired by Microsoft Copilot</div> -->
     </div>
     <!-- Right Chat Pane -->
     <div class="chat-pane">
-        <div class="chat-history">
+        <div class="chat-history" id="chat-history">
             {% for msg in chat_history %}
                 <div class="msg-row msg-{{ msg.sender }}">
                     {% if msg.sender == 'bot' %}
                         <div class="avatar">🤖</div>
-                        <div class="bubble bubble-bot">{{ msg.text }}</div>
+                        <div class="bubble bubble-bot bot-msg">{{ msg.text|safe }}</div>
                     {% else %}
                         <div class="bubble bubble-user">{{ msg.text }}</div>
                         <div class="avatar">{{ request.user.username|slice:":1"|upper }}</div>
@@ -73,4 +92,127 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+    // Scroll chat to bottom on load and after each message
+    function scrollChatToBottom() {
+        var chatHistory = document.getElementById('chat-history');
+        if (chatHistory) {
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+    }
+    
+    // Load and display schema tree
+    function loadSchemaTree() {
+        const schemaTree = document.getElementById('schema-tree');
+        if (!schemaTree) {
+            console.log('Schema tree element not found');
+            return;
+        }
+        
+        console.log('Loading schema tree...');
+        const url = '{% url "schema_visualization" %}';
+        console.log('Fetching from:', url);
+        
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Schema data:', data);
+                if (data.error) {
+                    schemaTree.innerHTML = `<div class="text-danger">${data.error}</div>`;
+                    return;
+                }
+                
+                let html = '';
+                if (data.tables && data.tables.length > 0) {
+                    data.tables.forEach(table => {
+                        html += `
+                            <div class="schema-table mb-2">
+                                <div class="table-header" onclick="toggleTable(this)" style="cursor: pointer; font-weight: 600; color: #2564cf;">
+                                    <span class="toggle-icon">▶</span> ${table.name}
+                                </div>
+                                <div class="table-columns" style="display: none; margin-left: 1rem; font-size: 0.9rem;">
+                                    ${table.columns.map(col => `
+                                        <div class="column-item" style="color: #666; margin: 0.2rem 0;">
+                                            • ${col.name} <span style="color: #999;">(${col.type})</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html = '<div class="text-muted">No tables found</div>';
+                }
+                schemaTree.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Schema loading error:', error);
+                schemaTree.innerHTML = `<div class="text-danger">Error loading schema: ${error}</div>`;
+            });
+    }
+    
+    function toggleTable(header) {
+        const columns = header.nextElementSibling;
+        const icon = header.querySelector('.toggle-icon');
+        if (columns.style.display === 'none') {
+            columns.style.display = 'block';
+            icon.textContent = '▼';
+        } else {
+            columns.style.display = 'none';
+            icon.textContent = '▶';
+        }
+    }
+    
+    window.onload = function() {
+        // Load schema tree if connection exists
+        {% if db_conn %}
+            loadSchemaTree();
+        {% endif %}
+        
+        // Render Markdown for bot messages (enhance existing content)
+        document.querySelectorAll('.bot-msg').forEach(function(el) {
+            const raw = el.innerHTML;
+            if (raw && raw.trim()) {
+                el.innerHTML = marked.parse(raw);
+            }
+        });
+        // Add CSV download button for markdown tables
+        document.querySelectorAll('.bot-msg table').forEach(function(table) {
+            const btn = document.createElement('button');
+            btn.textContent = 'Download as CSV';
+            btn.className = 'btn btn-sm btn-outline-secondary mb-2';
+            btn.onclick = function() {
+                let csv = '';
+                for (let row of table.rows) {
+                    let rowData = [];
+                    for (let cell of row.cells) {
+                        rowData.push('"' + cell.innerText.replace(/"/g, '""') + '"');
+                    }
+                    csv += rowData.join(',') + '\n';
+                }
+                const blob = new Blob([csv], {type: 'text/csv'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'result.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+            table.parentNode.insertBefore(btn, table);
+        });
+        scrollChatToBottom();
+    };
+    document.querySelector('form.input-area').addEventListener('submit', function() {
+        setTimeout(scrollChatToBottom, 100);
+    });
+</script>
 {% endblock %} 

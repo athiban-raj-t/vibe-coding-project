@@ -7,3 +7,5 @@ langgraph
 langchain-openai
 cryptography
 python-dotenv
+pandas
+tabulate
